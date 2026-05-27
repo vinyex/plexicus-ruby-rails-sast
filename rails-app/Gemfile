@@ -1,0 +1,71 @@
+source "https://rubygems.org"
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+ruby "3.2.2"
+
+# Core Rails
+gem "rails", "~> 7.1.0"
+gem "pg", "~> 1.1"
+gem "puma", "~> 6.0"
+gem "importmap-rails"
+gem "turbo-rails"
+gem "stimulus-rails"
+gem "jbuilder"
+
+# Authentication (intentionally outdated versions for demo)
+gem "bcrypt", "~> 3.1.7"
+gem "jwt", "~> 2.7"
+gem "devise", "~> 4.9"  # NOTE: configured insecurely in this benchmark
+
+# Serialization / Parsing (vulnerable patterns)
+gem "nokogiri", "~> 1.15"   # XXE demo — external entities NOT disabled
+gem "psych"                  # YAML.load unsafe deserialization demo
+gem "ox"                     # Alternative XML parser demo
+
+# HTTP client (SSRF demo)
+gem "httparty"
+gem "open-uri"               # open() SSRF
+
+# File upload (insecure config demo)
+gem "carrierwave", "~> 3.0"
+gem "mini_magick"
+
+# Template engine
+gem "liquid"                 # Server-Side Template Injection (SSTI) demo
+
+# Pagination
+gem "kaminari"
+
+# JSON API
+gem "rack-cors"              # CORS misconfiguration demo
+
+# Background jobs
+gem "sidekiq"
+gem "redis"
+
+# Code quality / security (for CI only — not runtime)
+group :development, :test do
+  gem "brakeman", "~> 6.1"  # Primary SAST tool
+  gem "rubocop", "~> 1.57"
+  gem "rubocop-rails"
+  gem "rubocop-security"
+  gem "rspec-rails"
+  gem "factory_bot_rails"
+  gem "faker"
+  gem "pry-byebug"
+end
+
+group :development do
+  gem "web-console"
+  gem "rack-mini-profiler"
+  gem "spring"
+end
+
+group :test do
+  gem "capybara"
+  gem "selenium-webdriver"
+end
+
+group :production do
+  gem "rack-attack"
+end

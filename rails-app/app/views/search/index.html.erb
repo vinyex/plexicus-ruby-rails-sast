@@ -1,0 +1,44 @@
+<%# ============================================================== %>
+<%# PLEXICUS F-LANG-09 BENCHMARK — Search View                   %>
+<%# Demonstrates: XSS via raw/html_safe, reflected XSS           %>
+<%# ⚠️  INTENTIONALLY VULNERABLE — for SAST demonstration ONLY   %>
+<%# ============================================================== %>
+<div class="search-container">
+  <h1>Search Results</h1>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045a — XSS via raw helper %>
+  <%# Brakeman check: CheckCrossSiteScripting %>
+  <%# Payload: ?q=<script>alert(document.cookie)</script> %>
+  <p>Results for: <%= raw(@query) %></p>  <%# VULN: raw bypasses ERB escaping %>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045b — XSS via html_safe %>
+  <div class="banner">
+    <%= @query.to_s.html_safe %>  <%# VULN: html_safe on user input %>
+  </div>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045c — XSS via content_tag with html_safe %>
+  <%= content_tag :div, @query.html_safe, class: "result-count" %>  <%# VULN %>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045d — XSS via link_to with raw href %>
+  <%# Payload: ?q=javascript:alert(1) %>
+  <%= link_to "Search again", @query %>  <%# VULN: JS protocol allowed %>
+
+  <% @results.each do |post| %>
+    <div class="result">
+      <%# VULNERABILITY DEMO: F-LANG-09-045e — XSS in loop via html_safe %>
+      <h3><%= post.title.html_safe %></h3>  <%# VULN %>
+      <p><%= raw(post.body) %></p>           <%# VULN %>
+
+      <%# SAFE comparison: %>
+      <%# <h3><%= post.title %></h3>  ← ERB escapes by default %>
+    </div>
+  <% end %>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045f — DOM XSS via inline JavaScript %>
+  <script>
+    // VULN: Ruby interpolation inside JS — no JS escaping
+    var searchQuery = "<%= @query %>";  // VULN: breaks out of JS string
+    var userId      = "<%= @current_user&.id %>";
+    document.querySelector("#q").value = searchQuery;
+  </script>
+</div>

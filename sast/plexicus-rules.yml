@@ -1,0 +1,226 @@
+# ============================================================================
+# Plexicus SAST Engine — Rule Configuration for Ruby / Rails
+# F-LANG-09 Benchmark: Framework-Aware Rails Analysis
+# ============================================================================
+# This file documents the Plexicus rules activated for this benchmark.
+# Rules are derived from Brakeman detection patterns and extended with
+# Plexicus framework-aware taint analysis.
+# ============================================================================
+
+version: "1.0"
+language: ruby
+frameworks:
+  - rails
+  - sinatra      # partial
+  - roda         # partial
+
+rules:
+  # ── Group 1: Mass Assignment ────────────────────────────────────────────
+  - id: RUBY-RAILS-001
+    name: mass_assignment_permit_bang
+    severity: HIGH
+    cwe: CWE-915
+    owasp: A08:2021
+    description: |
+      Use of params.permit! allows any parameter to be mass-assigned,
+      bypassing strong-parameter protection. Attacker can set admin, role,
+      confirmed, or any other field.
+    pattern: "params.require(*).permit!"
+    examples:
+      - "User.new(params.require(:user).permit!)"
+      - "user.update(params[:user])"
+    remediation: |
+      Replace permit! with an explicit allowlist:
+        params.require(:user).permit(:name, :email, :password)
+
+  - id: RUBY-RAILS-002
+    name: mass_assignment_direct_params
+    severity: HIGH
+    cwe: CWE-915
+    owasp: A08:2021
+    description: |
+      Direct use of params[:model] without .permit() enables mass assignment.
+    pattern: "Model.new(params[:])"
+
+  # ── Group 2: SQL Injection ──────────────────────────────────────────────
+  - id: RUBY-RAILS-010
+    name: sql_injection_where_interpolation
+    severity: CRITICAL
+    cwe: CWE-89
+    owasp: A03:2021
+    description: |
+      String interpolation inside .where() / .having() / .order() / .group()
+      enables SQL injection.
+    patterns:
+      - "where(\"...#{...}...\")"
+      - "having(\"...#{...}...\")"
+      - "order(params[*])"
+      - "group(params[*])"
+    remediation: |
+      Use parameterised form:
+        where("name LIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(term)}%")
+
+  - id: RUBY-RAILS-011
+    name: sql_injection_find_by_sql
+    severity: CRITICAL
+    cwe: CWE-89
+    owasp: A03:2021
+    pattern: "find_by_sql(\"...#{...}...\")"
+
+  - id: RUBY-RAILS-012
+    name: sql_injection_connection_execute
+    severity: CRITICAL
+    cwe: CWE-89
+    owasp: A03:2021
+    pattern: "connection.execute(\"...#{...}...\")"
+
+  # ── Group 3: CSRF ───────────────────────────────────────────────────────
+  - id: RUBY-RAILS-020
+    name: csrf_skip_before_action
+    severity: HIGH
+    cwe: CWE-352
+    owasp: A01:2021
+    description: |
+      Explicit skip of CSRF verification disables Rails' built-in protection.
+    pattern: "skip_before_action :verify_authenticity_token"
+    remediation: |
+      Remove the skip. For API endpoints use token-based auth (JWT/API key)
+      instead of disabling CSRF.
+
+  - id: RUBY-RAILS-021
+    name: csrf_null_session
+    severity: MEDIUM
+    cwe: CWE-352
+    owasp: A01:2021
+    pattern: "protect_from_forgery with: :null_session"
+
+  - id: RUBY-RAILS-022
+    name: csrf_protection_disabled_globally
+    severity: CRITICAL
+    cwe: CWE-352
+    owasp: A01:2021
+    pattern: "allow_forgery_protection = false"
+
+  # ── Group 4: Unsafe Redirect ────────────────────────────────────────────
+  - id: RUBY-RAILS-030
+    name: unsafe_redirect_params
+    severity: HIGH
+    cwe: CWE-601
+    owasp: A01:2021
+    description: |
+      redirect_to with an unvalidated URL parameter enables open redirect.
+      Attackers use this for phishing and OAuth token theft.
+    pattern: "redirect_to params[*]"
+    remediation: |
+      Validate against an allowlist:
+        ALLOWED = %w[dashboard profile settings].freeze
+        path = ALLOWED.include?(params[:page]) ? params[:page] : root_path
+        redirect_to path
+
+  # ── Group 5: Command Injection / RCE ───────────────────────────────────
+  - id: RUBY-RAILS-040
+    name: command_injection_backtick
+    severity: CRITICAL
+    cwe: CWE-78
+    owasp: A03:2021
+    pattern: "`...#{...}...`"
+
+  - id: RUBY-RAILS-041
+    name: command_injection_system
+    severity: CRITICAL
+    cwe: CWE-78
+    owasp: A03:2021
+    pattern: "system(\"...#{...}...\")"
+
+  - id: RUBY-RAILS-042
+    name: rce_eval
+    severity: CRITICAL
+    cwe: CWE-94
+    owasp: A03:2021
+    pattern: "eval(params[*])"
+
+  # ── Group 6: XSS ───────────────────────────────────────────────────────
+  - id: RUBY-RAILS-050
+    name: xss_raw_helper
+    severity: HIGH
+    cwe: CWE-79
+    owasp: A03:2021
+    pattern: "raw(params[*])"
+
+  - id: RUBY-RAILS-051
+    name: xss_html_safe
+    severity: HIGH
+    cwe: CWE-79
+    owasp: A03:2021
+    pattern: "params[*].html_safe"
+
+  - id: RUBY-RAILS-052
+    name: xss_dom_interpolation
+    severity: HIGH
+    cwe: CWE-79
+    owasp: A03:2021
+    pattern: "var x = \"<%= params[*] %>\";"
+
+  # ── Group 7: XXE ───────────────────────────────────────────────────────
+  - id: RUBY-RAILS-060
+    name: xxe_nokogiri_default
+    severity: HIGH
+    cwe: CWE-611
+    owasp: A05:2021
+    pattern: "Nokogiri::XML(user_input)"
+    remediation: |
+      Disable external entities:
+        Nokogiri::XML(data) { |cfg| cfg.nonet.noent }
+
+  # ── Group 8: Deserialization ────────────────────────────────────────────
+  - id: RUBY-RAILS-070
+    name: unsafe_yaml_load
+    severity: CRITICAL
+    cwe: CWE-502
+    owasp: A08:2021
+    pattern: "YAML.load(user_input)"
+    remediation: "Use YAML.safe_load"
+
+  - id: RUBY-RAILS-071
+    name: marshal_load_user_input
+    severity: CRITICAL
+    cwe: CWE-502
+    owasp: A08:2021
+    pattern: "Marshal.load(user_input)"
+
+  # ── Group 9: Path Traversal ─────────────────────────────────────────────
+  - id: RUBY-RAILS-080
+    name: path_traversal_file_read
+    severity: HIGH
+    cwe: CWE-22
+    owasp: A01:2021
+    pattern: "File.read(path_with_params)"
+
+  - id: RUBY-RAILS-081
+    name: send_file_user_input
+    severity: HIGH
+    cwe: CWE-22
+    owasp: A01:2021
+    pattern: "send_file params[*]"
+
+  # ── Group 10: Hardcoded Secrets ─────────────────────────────────────────
+  - id: RUBY-RAILS-090
+    name: hardcoded_secret_key_base
+    severity: CRITICAL
+    cwe: CWE-798
+    owasp: A02:2021
+    pattern: "secret_key_base = \"[a-f0-9]{64}\""
+
+  - id: RUBY-RAILS-091
+    name: hardcoded_jwt_secret
+    severity: HIGH
+    cwe: CWE-798
+    owasp: A02:2021
+    pattern: "JWT_SECRET = \"...\""
+
+  - id: RUBY-RAILS-092
+    name: hardcoded_aws_key
+    severity: CRITICAL
+    cwe: CWE-798
+    owasp: A02:2021
+    pattern: "AKIA[0-9A-Z]{16}"

@@ -1,0 +1,31 @@
+<%# ============================================================== %>
+<%# PLEXICUS F-LANG-09 BENCHMARK — User Profile View             %>
+<%# Demonstrates: XSS, sensitive data exposure in view           %>
+<%# ⚠️  INTENTIONALLY VULNERABLE — for SAST demonstration ONLY   %>
+<%# ============================================================== %>
+<div class="profile">
+  <h1>User Profile</h1>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-065 — Sensitive field rendered in view %>
+  <p>Email:           <%= @user.email %></p>
+  <p>Password Digest: <%= @user.password_digest %></p>  <%# VULN: hash exposed %>
+  <p>SSN:             <%= @user.ssn %></p>               <%# VULN: PII exposed %>
+  <p>Credit Card:     <%= @user.credit_card_number %></p><%# VULN: PAN exposed %>
+  <p>Role:            <%= @user.role %></p>
+  <p>Admin:           <%= @user.admin %></p>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045g — XSS via user bio field %>
+  <div class="bio">
+    <%= raw(@user.bio) %>  <%# VULN: bio may contain stored XSS payload %>
+  </div>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-045h — XSS in avatar URL (href injection) %>
+  <img src="<%= @user.avatar_url %>" />  <%# VULN: attacker controls URL %>
+
+  <%# VULNERABILITY DEMO: F-LANG-09-066 — CSRF token leak in view %>
+  <input type="hidden" id="csrf" value="<%= form_authenticity_token %>" />
+  <script>
+    // VULN: exposes CSRF token to JavaScript (readable by XSS)
+    window.csrfToken = document.getElementById('csrf').value;
+  </script>
+</div>

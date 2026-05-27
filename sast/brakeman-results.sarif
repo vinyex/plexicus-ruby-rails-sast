@@ -1,0 +1,138 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Brakeman",
+          "version": "6.1.2",
+          "informationUri": "https://brakemanscanner.org",
+          "rules": [
+            { "id": "MassAssignment", "name": "MassAssignment", "shortDescription": { "text": "Mass Assignment vulnerability" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/mass_assignment/" },
+            { "id": "SQL", "name": "SQL", "shortDescription": { "text": "SQL Injection vulnerability" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/sql_injection/" },
+            { "id": "ForgerySetting", "name": "ForgerySetting", "shortDescription": { "text": "CSRF protection disabled" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/forgery_setting/" },
+            { "id": "Redirect", "name": "Redirect", "shortDescription": { "text": "Unsafe redirect" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/redirect/" },
+            { "id": "CrossSiteScripting", "name": "CrossSiteScripting", "shortDescription": { "text": "Cross-Site Scripting (XSS)" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/cross-site_scripting/" },
+            { "id": "Execute", "name": "Execute", "shortDescription": { "text": "Command Injection" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/command_injection/" },
+            { "id": "Evaluation", "name": "Evaluation", "shortDescription": { "text": "Dangerous Evaluation" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/dangerous_evaluation/" },
+            { "id": "FileDisclosure", "name": "FileDisclosure", "shortDescription": { "text": "File Access" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/file_access/" },
+            { "id": "SendFile", "name": "SendFile", "shortDescription": { "text": "Dangerous send_file" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/send_file/" },
+            { "id": "YAMLParsing", "name": "YAMLParsing", "shortDescription": { "text": "YAML Parsing" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/yaml_parsing/" },
+            { "id": "Deserialize", "name": "Deserialize", "shortDescription": { "text": "Deserialization of User-controlled Data" }, "helpUri": "https://brakemanscanner.org/docs/warning_types/deserialization/" }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "MassAssignment",
+          "level": "error",
+          "message": { "text": "Mass assignment via params.permit! in UsersController#create" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/users_controller.rb" }, "region": { "startLine": 17, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "MassAssignment",
+          "level": "error",
+          "message": { "text": "Mass assignment via unfiltered params in UsersController#update" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/users_controller.rb" }, "region": { "startLine": 27, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "SQL",
+          "level": "error",
+          "message": { "text": "SQL injection via string interpolation in where clause" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/users_controller.rb" }, "region": { "startLine": 43, "startColumn": 15 } } }]
+        },
+        {
+          "ruleId": "SQL",
+          "level": "error",
+          "message": { "text": "SQL injection via params in order clause" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/users_controller.rb" }, "region": { "startLine": 46, "startColumn": 15 } } }]
+        },
+        {
+          "ruleId": "SQL",
+          "level": "error",
+          "message": { "text": "SQL injection via find_by_sql with string interpolation" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/users_controller.rb" }, "region": { "startLine": 49, "startColumn": 15 } } }]
+        },
+        {
+          "ruleId": "ForgerySetting",
+          "level": "error",
+          "message": { "text": "CSRF protection disabled via skip_before_action" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/sessions_controller.rb" }, "region": { "startLine": 14, "startColumn": 3 } } }]
+        },
+        {
+          "ruleId": "ForgerySetting",
+          "level": "error",
+          "message": { "text": "CSRF protection set to null_session in ApplicationController" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/application_controller.rb" }, "region": { "startLine": 11, "startColumn": 3 } } }]
+        },
+        {
+          "ruleId": "Redirect",
+          "level": "error",
+          "message": { "text": "Possible unprotected redirect - redirect to user-supplied URL" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/redirects_controller.rb" }, "region": { "startLine": 18, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "Redirect",
+          "level": "error",
+          "message": { "text": "Possible unprotected redirect via return_to parameter" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/redirects_controller.rb" }, "region": { "startLine": 27, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "CrossSiteScripting",
+          "level": "error",
+          "message": { "text": "Unescaped user input via raw() in search highlight" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/search_controller.rb" }, "region": { "startLine": 57, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "CrossSiteScripting",
+          "level": "error",
+          "message": { "text": "Unescaped parameter rendered with html_safe" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/views/search/index.html.erb" }, "region": { "startLine": 19, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "Execute",
+          "level": "error",
+          "message": { "text": "Possible command injection via backtick execution with user input" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/files_controller.rb" }, "region": { "startLine": 43, "startColumn": 14 } } }]
+        },
+        {
+          "ruleId": "Execute",
+          "level": "error",
+          "message": { "text": "Possible command injection via system() with user input" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/files_controller.rb" }, "region": { "startLine": 53, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "Evaluation",
+          "level": "error",
+          "message": { "text": "User input in eval — arbitrary code execution" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/files_controller.rb" }, "region": { "startLine": 63, "startColumn": 14 } } }]
+        },
+        {
+          "ruleId": "FileDisclosure",
+          "level": "error",
+          "message": { "text": "File access via user-controlled path — path traversal possible" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/files_controller.rb" }, "region": { "startLine": 22, "startColumn": 16 } } }]
+        },
+        {
+          "ruleId": "SendFile",
+          "level": "error",
+          "message": { "text": "Dangerous send_file with user-controlled filename" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/files_controller.rb" }, "region": { "startLine": 74, "startColumn": 5 } } }]
+        },
+        {
+          "ruleId": "YAMLParsing",
+          "level": "error",
+          "message": { "text": "YAML.load used with user-supplied data — use YAML.safe_load" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/imports_controller.rb" }, "region": { "startLine": 42, "startColumn": 12 } } }]
+        },
+        {
+          "ruleId": "Deserialize",
+          "level": "error",
+          "message": { "text": "Marshal.load called with user-supplied data — arbitrary object instantiation" },
+          "locations": [{ "physicalLocation": { "artifactLocation": { "uri": "rails-app/app/controllers/imports_controller.rb" }, "region": { "startLine": 54, "startColumn": 11 } } }]
+        }
+      ]
+    }
+  ]
+}

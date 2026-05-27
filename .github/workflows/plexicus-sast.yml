@@ -1,0 +1,148 @@
+name: Plexicus SAST — Ruby on Rails
+
+on:
+  push:
+    branches: [ main, dev, "feature/**" ]
+  pull_request:
+    branches: [ main, dev ]
+  schedule:
+    - cron: "0 2 * * 1"   # Weekly Monday 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      severity_threshold:
+        description: "Minimum severity to fail build (critical/high/medium/low)"
+        required: false
+        default: "high"
+
+permissions:
+  contents: read
+  security-events: write   # Upload SARIF to GitHub Advanced Security
+  actions: read
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 1: Plexicus SAST Engine (primary analysis)
+  # ──────────────────────────────────────────────────────────────────────────
+  plexicus-sast:
+    name: "Plexicus SAST Engine"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Plexicus SAST
+        uses: plexicus/sast-action@v1
+        with:
+          api_key:   ${{ secrets.PLEXICUS_API_KEY }}
+          language:  ruby
+          framework: rails
+          # Rails-specific Brakeman-derived rules enabled:
+          #   - mass_assignment
+          #   - sql_injection_activerecord
+          #   - csrf_bypass
+          #   - unsafe_redirect
+          #   - command_injection
+          #   - xss
+          #   - xxe
+          #   - yaml_load
+          #   - marshal_load
+          #   - path_traversal
+          #   - hardcoded_secrets
+          severity_threshold: ${{ github.event.inputs.severity_threshold || 'high' }}
+          sarif_output: plexicus-results.sarif
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: plexicus-results.sarif
+          category:   plexicus-ruby-rails
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 2: Brakeman (parallel reference scan)
+  # ──────────────────────────────────────────────────────────────────────────
+  brakeman:
+    name: "Brakeman SAST"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: false
+
+      - name: Install Brakeman
+        run: gem install brakeman --no-document
+
+      - name: Run Brakeman
+        working-directory: rails-app
+        run: |
+          brakeman \
+            --format sarif \
+            --output ../sast/brakeman-results.sarif \
+            --format json \
+            --output ../sast/brakeman-results.json \
+            --format text \
+            --output ../sast/brakeman-report.txt \
+            --no-pager \
+            --confidence-level 1 \
+            --run-all-checks \
+            --quiet || true   # don't fail CI — this is a benchmark repo
+
+      - name: Display Brakeman Summary
+        run: |
+          echo "=== BRAKEMAN FINDINGS SUMMARY ==="
+          cat sast/brakeman-report.txt | tail -40
+
+      - name: Upload Brakeman SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: sast/brakeman-results.sarif
+          category:   brakeman-ruby-rails
+
+      - name: Archive SAST Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brakeman-results-${{ github.sha }}
+          path: sast/
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 3: Bundler Audit (SCA — dependency vulnerabilities)
+  # ──────────────────────────────────────────────────────────────────────────
+  bundler-audit:
+    name: "Bundler Audit (SCA)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: false
+
+      - name: Install bundler-audit
+        run: gem install bundler-audit --no-document
+
+      - name: Run bundler-audit
+        working-directory: rails-app
+        run: |
+          bundle-audit check --update --format json > \
+            ../sast/bundler-audit-results.json 2>&1 || true
+
+      - name: Archive SCA Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bundler-audit-results-${{ github.sha }}
+          path: sast/bundler-audit-results.json
+          retention-days: 30
