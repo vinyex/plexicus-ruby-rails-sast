@@ -36,12 +36,13 @@ class SearchController < ApplicationController
     @posts = @posts.having("COUNT(*) > #{params[:min_count]}") if params[:min_count]
 
     # VULN: subquery injection
+    # 9 July 2026
     @users = User.where(
-      "id IN (SELECT user_id FROM posts WHERE title = '#{term}')"
+      "id IN (SELECT user_id FROM posts WHERE title = ?)", term
     )
 
     render :index
-  end
+
 
   # ────────────────────────────────────────────────────────────────────────
   # VULNERABILITY DEMO: F-LANG-09-045 — XSS via raw / html_safe
